@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>TMU Bus Timetable</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow" id="route-label">TMU Bus Timetable</div>
+      <h1>今乗れるバスを、スマホでそのまま確認する</h1>
+      <p>GitHub Pages 上で動く静的版です。現在時刻から次の便を探したり、指定時刻で最短便を調べたりできます。</p>
+
+      <div class="meta-grid">
+        <article class="meta-card">
+          <span>現在時刻</span>
+          <strong id="current-time">--</strong>
+        </article>
+        <article class="meta-card">
+          <span>運行種別</span>
+          <strong id="service-type">--</strong>
+        </article>
+        <article class="meta-card">
+          <span>ルート</span>
+          <strong id="route-name">--</strong>
+        </article>
+        <article class="meta-card">
+          <span>初期停留所</span>
+          <strong id="selected-stop-label">--</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="layout">
+      <section class="panel">
+        <h2>検索</h2>
+        <div class="form-grid">
+          <div>
+            <label for="stop">停留所</label>
+            <select id="stop"></select>
+          </div>
+          <div>
+            <label for="date">日付</label>
+            <input id="date" type="date">
+          </div>
+          <div>
+            <label for="time">時刻</label>
+            <input id="time" type="time">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="search-btn" type="button">この条件で検索</button>
+          <button class="btn btn-secondary" id="now-btn" type="button">現在時刻で検索</button>
+        </div>
+
+        <div class="result-banner">
+          <span>検索結果</span>
+          <strong id="result-message">読み込み中...</strong>
+          <p id="result-detail">JSON を読み込んでいます。</p>
+        </div>
+
+        <div class="cards" id="upcoming-list"></div>
+      </section>
+
+      <aside class="panel">
+        <h2>この日の便一覧</h2>
+        <div class="schedule" id="schedule-list"></div>
+        <p class="note" id="note"></p>
+      </aside>
+    </section>
+  </main>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
