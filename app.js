@@ -20,6 +20,11 @@ const elements = {
   searchBtn: document.getElementById('search-btn'),
   nowBtn: document.getElementById('now-btn'),
   upcomingList: document.getElementById('upcoming-list'),
+  calendarTitle: document.getElementById('calendar-title'),
+  calendarCaption: document.getElementById('calendar-caption'),
+  calendarPrev: document.getElementById('calendar-prev'),
+  calendarNext: document.getElementById('calendar-next'),
+  calendarGrid: document.getElementById('calendar-grid'),
   scheduleList: document.getElementById('schedule-list'),
   note: document.getElementById('note'),
 };
@@ -28,6 +33,7 @@ let timetable = null;
 let calendar = null;
 let activeResult = null;
 let liveClockTimer = null;
+let calendarMonth = '';
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -62,6 +68,22 @@ function addMinutes(value, minutes) {
   const hours = Math.floor(((total % 1440) + 1440) % 1440 / 60);
   const mins = ((total % 1440) + 1440) % 1440 % 60;
   return `${pad2(hours)}:${pad2(mins)}`;
+}
+
+function parseDateParts(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return { year, month, day };
+}
+
+function monthKeyForDate(dateStr) {
+  const { year, month } = parseDateParts(dateStr);
+  return `${year}-${pad2(month)}`;
+}
+
+function shiftMonth(monthKey, delta) {
+  const [year, month] = monthKey.split('-').map(Number);
+  const shifted = new Date(year, month - 1 + delta, 1);
+  return `${shifted.getFullYear()}-${pad2(shifted.getMonth() + 1)}`;
 }
 
 function serviceTypeForDate(dateStr) {
@@ -186,6 +208,57 @@ function renderUpcoming(items) {
   `;
 }
 
+function renderCalendar(dateStr) {
+  const { day } = parseDateParts(dateStr);
+  const [year, month] = calendarMonth.split('-').map(Number);
+  const monthLabel = `${year}年${month}月`;
+  const firstDay = new Date(year, month - 1, 1);
+  const firstWeekday = firstDay.getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const now = formatTokyoNow();
+  const cells = [];
+
+  for (let index = 0; index < firstWeekday; index += 1) {
+    cells.push('<span class="calendar-day calendar-day-empty" aria-hidden="true"></span>');
+  }
+
+  for (let currentDay = 1; currentDay <= daysInMonth; currentDay += 1) {
+    const currentDate = `${year}-${pad2(month)}-${pad2(currentDay)}`;
+    const classes = ['calendar-day'];
+    const serviceType = serviceTypeForDate(currentDate);
+    let badge = '<small>運休</small>';
+
+    if (serviceType === 'two_bus') {
+      classes.push('calendar-day-two-bus');
+      badge = '<small>2台</small>';
+    } else if (serviceType === 'one_bus') {
+      classes.push('calendar-day-one-bus');
+      badge = '<small>1台</small>';
+    } else {
+      classes.push('calendar-day-off');
+    }
+
+    if (currentDate === dateStr) {
+      classes.push('calendar-day-selected');
+    }
+
+    if (currentDate === now.date) {
+      classes.push('calendar-day-today');
+    }
+
+    cells.push(`
+      <button class="${classes.join(' ')}" type="button" data-date="${currentDate}" aria-pressed="${currentDay === day ? 'true' : 'false'}">
+        <strong>${currentDay}</strong>
+        ${badge}
+      </button>
+    `);
+  }
+
+  elements.calendarTitle.textContent = monthLabel;
+  elements.calendarCaption.textContent = '2台運行日 / 1台運行日 / 運休を色分けしています';
+  elements.calendarGrid.innerHTML = cells.join('');
+}
+
 function renderSchedule(dateStr, stopLabel, serviceType, items, departures, now) {
   const currentLine = dateStr === now.date ? now.time : '';
   const hours = Array.from({ length: 17 }, (_, index) => 6 + index);
@@ -250,11 +323,13 @@ function renderSchedule(dateStr, stopLabel, serviceType, items, departures, now)
 
 function applyResult(result) {
   activeResult = result;
+  calendarMonth = monthKeyForDate(result.date);
   const now = formatTokyoNow();
   elements.currentTime.textContent = now.display;
   elements.serviceType.textContent = result.serviceType;
   elements.selectedStopLabel.textContent = result.stopLabel;
   renderUpcoming(result.upcoming);
+  renderCalendar(result.date);
   renderSchedule(result.date, result.stopLabel, result.serviceType, result.upcoming, departuresForDate(result.date, result.stopKey), now);
 }
 
@@ -335,6 +410,35 @@ async function init() {
 
   elements.stop.addEventListener('change', () => {
     applyResult(buildResult(elements.date.value, elements.time.value, elements.stop.value));
+  });
+
+  elements.date.addEventListener('change', () => {
+    applyResult(buildResult(elements.date.value, elements.time.value, elements.stop.value));
+  });
+
+  elements.time.addEventListener('change', () => {
+    applyResult(buildResult(elements.date.value, elements.time.value, elements.stop.value));
+  });
+
+  elements.calendarGrid.addEventListener('click', (event) => {
+    const dayButton = event.target.closest('[data-date]');
+    if (!dayButton) {
+      return;
+    }
+
+    const nextDate = dayButton.getAttribute('data-date');
+    elements.date.value = nextDate;
+    runSearch('next');
+  });
+
+  elements.calendarPrev.addEventListener('click', () => {
+    calendarMonth = shiftMonth(calendarMonth, -1);
+    renderCalendar(elements.date.value);
+  });
+
+  elements.calendarNext.addEventListener('click', () => {
+    calendarMonth = shiftMonth(calendarMonth, 1);
+    renderCalendar(elements.date.value);
   });
 }
 

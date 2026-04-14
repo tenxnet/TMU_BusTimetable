@@ -56,6 +56,29 @@
         </div>
 
         <div class="cards" id="upcoming-list"></div>
+
+        <section class="calendar-panel" aria-labelledby="calendar-title">
+          <div class="calendar-head">
+            <div class="calendar-head-copy">
+              <h3 id="calendar-title">--</h3>
+              <p id="calendar-caption">運行日を表示しています</p>
+            </div>
+            <div class="calendar-nav">
+              <button class="calendar-nav-btn" id="calendar-prev" type="button" aria-label="前の月">‹</button>
+              <button class="calendar-nav-btn" id="calendar-next" type="button" aria-label="次の月">›</button>
+            </div>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>日</span>
+            <span>月</span>
+            <span>火</span>
+            <span>水</span>
+            <span>木</span>
+            <span>金</span>
+            <span>土</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </section>
       </section>
 
       <aside class="panel timeline-panel">
