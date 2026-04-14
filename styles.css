@@ -193,33 +193,6 @@ select:focus {
   background: rgba(255, 255, 255, 0.78);
 }
 
-.result-banner {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 20px;
-  border: 1px solid rgba(19, 32, 46, 0.08);
-  background: linear-gradient(135deg, rgba(11, 114, 133, 0.08), rgba(240, 140, 0, 0.08));
-}
-
-.result-banner span {
-  display: block;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.result-banner strong {
-  display: block;
-  margin-top: 6px;
-  font-size: 18px;
-  line-height: 1.35;
-}
-
-.result-banner p {
-  margin: 8px 0 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
 .cards,
 .schedule {
   display: grid;

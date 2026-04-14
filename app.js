@@ -20,8 +20,6 @@ const elements = {
   searchBtn: document.getElementById('search-btn'),
   nowBtn: document.getElementById('now-btn'),
   upcomingList: document.getElementById('upcoming-list'),
-  resultMessage: document.getElementById('result-message'),
-  resultDetail: document.getElementById('result-detail'),
   scheduleList: document.getElementById('schedule-list'),
   note: document.getElementById('note'),
 };
@@ -149,7 +147,6 @@ function buildResult(dateStr, timeStr, stopKey) {
 
   result.nextDeparture = upcoming[0].departure;
   result.arrival = upcoming[0].arrival;
-  result.message = '次の便を表示中';
   return result;
 }
 
@@ -210,7 +207,7 @@ function renderSchedule(dateStr, stopLabel, serviceType, items, departures, now)
   }
 
   const currentLabel = hasCurrentLine ? `現在時刻 ${currentLine}` : `${dateStr} の選択時刻`;
-  elements.timelineSubtitle.textContent = `${stopLabel} · ${currentLabel} · ${serviceType} · 1日の便一覧`;
+  elements.timelineSubtitle.textContent = `${stopLabel} · ${currentLabel} · ${serviceType}`;
 
   elements.scheduleList.innerHTML = `
     <div class="timeline-track">
@@ -257,10 +254,6 @@ function applyResult(result) {
   elements.currentTime.textContent = now.display;
   elements.serviceType.textContent = result.serviceType;
   elements.selectedStopLabel.textContent = result.stopLabel;
-  elements.resultMessage.textContent = result.message || '検索完了';
-  elements.resultDetail.textContent = result.nextDeparture
-    ? `${result.stopLabel} / ${result.serviceType}`
-    : result.message;
   renderUpcoming(result.upcoming);
   renderSchedule(result.date, result.stopLabel, result.serviceType, result.upcoming, departuresForDate(result.date, result.stopKey), now);
 }
@@ -346,6 +339,10 @@ async function init() {
 }
 
 init().catch((error) => {
-  elements.resultMessage.textContent = '読み込みに失敗しました';
-  elements.resultDetail.textContent = String(error);
+  elements.upcomingList.innerHTML = `
+    <article class="trip-card">
+      <p class="trip-summary">読み込みに失敗しました</p>
+    </article>
+  `;
+  elements.note.textContent = String(error);
 });
