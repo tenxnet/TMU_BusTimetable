@@ -627,7 +627,6 @@ select:focus {
 }
 
 @media (max-width: 900px) {
-  .meta-grid,
   .layout,
   .form-grid,
   .trip-grid {
@@ -656,5 +655,222 @@ select:focus {
 
   .timeline-hour {
     grid-template-columns: 64px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 10px 0 28px;
+  }
+
+  .hero {
+    padding: 16px 16px 18px;
+  }
+
+  .hero::after {
+    right: -88px;
+    bottom: -110px;
+    width: 180px;
+    height: 180px;
+  }
+
+  .eyebrow {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .meta-card {
+    padding: 12px 13px;
+  }
+
+  .meta-card strong {
+    font-size: 14px;
+  }
+
+  .layout {
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .panel h2 {
+    margin-bottom: 12px;
+    font-size: 17px;
+  }
+
+  .form-grid {
+    gap: 10px;
+  }
+
+  input,
+  select,
+  button {
+    padding: 13px 14px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 16px;
+  }
+
+  .cards {
+    margin-top: 14px;
+  }
+
+  .trip-card {
+    padding: 12px;
+  }
+
+  .trip-summary {
+    gap: 8px;
+    padding: 14px 12px;
+    font-size: 16px;
+    flex-wrap: wrap;
+  }
+
+  .calendar-panel {
+    padding: 14px 12px;
+  }
+
+  .calendar-head {
+    margin-bottom: 10px;
+  }
+
+  .calendar-head h3 {
+    font-size: 16px;
+  }
+
+  .calendar-nav-btn {
+    width: 36px;
+    min-width: 36px;
+    font-size: 21px;
+  }
+
+  .calendar-weekdays,
+  .calendar-grid {
+    gap: 6px;
+  }
+
+  .calendar-weekdays span {
+    font-size: 11px;
+  }
+
+  .calendar-day {
+    min-height: 54px;
+    padding: 7px 2px;
+    border-radius: 14px;
+  }
+
+  .calendar-day strong {
+    font-size: 14px;
+  }
+
+  .calendar-day small {
+    font-size: 10px;
+  }
+
+  .timeline {
+    margin-top: 12px;
+  }
+
+  .timeline-track {
+    max-height: 520px;
+  }
+
+  .timeline-intro {
+    padding: 2px 12px 0;
+    font-size: 11px;
+  }
+
+  .timeline-hour {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 10px;
+    padding: 9px 10px;
+  }
+
+  .timeline-hour-label {
+    font-size: 12px;
+  }
+
+  .timeline-hour-body {
+    height: 66px;
+    padding-left: 16px;
+  }
+
+  .timeline-chip {
+    left: 16px;
+    max-width: calc(100% - 18px);
+    padding: 6px 10px;
+  }
+
+  .timeline-chip strong {
+    font-size: 13px;
+  }
+
+  .timeline-now span {
+    right: 8px;
+    top: -12px;
+    font-size: 10px;
+  }
+
+  .site-footer {
+    margin-top: 14px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+}
+
+@media (max-width: 420px) {
+  .meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .meta-card span {
+    font-size: 11px;
+  }
+
+  .meta-card strong {
+    font-size: 13px;
+  }
+
+  .trip-summary {
+    font-size: 15px;
+  }
+
+  .calendar-day {
+    min-height: 48px;
+  }
+
+  .calendar-day strong {
+    font-size: 13px;
+  }
+
+  .calendar-day small {
+    font-size: 9px;
+  }
+
+  .timeline-hour {
+    grid-template-columns: 50px minmax(0, 1fr);
+  }
+
+  .timeline-hour-body {
+    height: 60px;
   }
 }
