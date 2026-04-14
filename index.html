@@ -4,15 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light">
-  <title>TMU Bus Timetable</title>
+  <title>東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="shell">
     <section class="hero">
-      <div class="eyebrow" id="route-label">TMU Bus Timetable</div>
-      <h1>今乗れるバスを、スマホでそのまま確認する</h1>
-      <p>GitHub Pages 上で動く静的版です。現在時刻から次の便を探したり、指定時刻で最短便を調べたりできます。</p>
+      <div class="eyebrow" id="route-label">東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル</div>
 
       <div class="meta-grid">
         <article class="meta-card">
@@ -48,7 +46,7 @@
           </div>
           <div>
             <label for="time">時刻</label>
-            <input id="time" type="time">
+            <input id="time" type="time" step="60">
           </div>
         </div>
 
@@ -66,9 +64,18 @@
         <div class="cards" id="upcoming-list"></div>
       </section>
 
-      <aside class="panel">
-        <h2>この日の便一覧</h2>
-        <div class="schedule" id="schedule-list"></div>
+      <aside class="panel timeline-panel">
+        <div class="timeline-head">
+          <div>
+            <h2>本日の運行スケジュール</h2>
+            <p id="timeline-subtitle">2台運行日 / 1台運行日の一日分を順に見られます</p>
+          </div>
+          <div class="timeline-legend">
+            <span><i class="legend-line"></i>現在時刻</span>
+            <span><i class="legend-dot"></i>発車</span>
+          </div>
+        </div>
+        <div class="timeline" id="schedule-list"></div>
         <p class="note" id="note"></p>
       </aside>
     </section>

@@ -13,20 +13,23 @@ const elements = {
   serviceType: document.getElementById('service-type'),
   routeName: document.getElementById('route-name'),
   selectedStopLabel: document.getElementById('selected-stop-label'),
+  timelineSubtitle: document.getElementById('timeline-subtitle'),
   stop: document.getElementById('stop'),
   date: document.getElementById('date'),
   time: document.getElementById('time'),
   searchBtn: document.getElementById('search-btn'),
   nowBtn: document.getElementById('now-btn'),
+  upcomingList: document.getElementById('upcoming-list'),
   resultMessage: document.getElementById('result-message'),
   resultDetail: document.getElementById('result-detail'),
-  upcomingList: document.getElementById('upcoming-list'),
   scheduleList: document.getElementById('schedule-list'),
   note: document.getElementById('note'),
 };
 
 let timetable = null;
 let calendar = null;
+let activeResult = null;
+let liveClockTimer = null;
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -94,7 +97,6 @@ function departuresForDate(dateStr, stopKey) {
 
 function buildUpcoming(dateStr, departures, timeStr) {
   const rideMin = timetable.meta.travel_time_minutes.min;
-  const rideMax = timetable.meta.travel_time_minutes.max;
   const currentMinutes = toMinutes(timeStr);
   const upcoming = [];
 
@@ -105,14 +107,11 @@ function buildUpcoming(dateStr, departures, timeStr) {
 
     upcoming.push({
       departure,
-      arrivalMin: addMinutes(departure, rideMin),
-      arrivalMax: addMinutes(departure, rideMax),
+      arrival: addMinutes(departure, rideMin),
       minutesToRide: rideMin,
-      minutesToExit: 0,
-      minutesToFinish: rideMax,
     });
 
-    if (upcoming.length === 3) {
+    if (upcoming.length === 1) {
       break;
     }
   }
@@ -134,8 +133,7 @@ function buildResult(dateStr, timeStr, stopKey) {
     serviceType: serviceTypeLabel(serviceType),
     message: '',
     nextDeparture: '',
-    arrivalMin: '',
-    arrivalMax: '',
+    arrival: '',
     upcoming,
   };
 
@@ -150,9 +148,8 @@ function buildResult(dateStr, timeStr, stopKey) {
   }
 
   result.nextDeparture = upcoming[0].departure;
-  result.arrivalMin = upcoming[0].arrivalMin;
-  result.arrivalMax = upcoming[0].arrivalMax;
-  result.message = `次のバスは ${result.nextDeparture} 発です`;
+  result.arrival = upcoming[0].arrival;
+  result.message = '次の便を表示中';
   return result;
 }
 
@@ -174,81 +171,121 @@ function renderUpcoming(items) {
   if (!items.length) {
     elements.upcomingList.innerHTML = `
       <article class="trip-card">
-        <header>
-          <strong>結果なし</strong>
-          <small>本日のバスは終了しました</small>
-        </header>
-        <p class="note">本日のバスは終了しました</p>
+        <p class="trip-summary">本日のバスは終了しました</p>
       </article>
     `;
     return;
   }
 
-  elements.upcomingList.innerHTML = items.map((item) => `
-    <article class="trip-card">
-      <header>
-        <strong>${escapeHtml(item.departure)} 発</strong>
-        <small>約 ${escapeHtml(item.minutesToRide)} - ${escapeHtml(item.minutesToFinish)} 分</small>
-      </header>
-      <div class="trip-grid">
-        <div class="mini"><span>到着目安 早い方</span><strong>${escapeHtml(item.arrivalMin)}</strong></div>
-        <div class="mini"><span>到着目安 遅い方</span><strong>${escapeHtml(item.arrivalMax)}</strong></div>
-        <div class="mini"><span>時刻</span><strong>${escapeHtml(item.departure)}</strong></div>
-      </div>
+  const item = items[0];
+  elements.upcomingList.innerHTML = `
+    <article class="trip-card trip-card-single">
+      <p class="trip-summary">
+        <span>${escapeHtml(item.departure)} 発</span>
+        <span class="trip-arrow">→</span>
+        <span>到着目安 ${escapeHtml(item.arrival)}</span>
+      </p>
     </article>
-  `).join('');
+  `;
 }
 
-function renderSchedule(dateStr, stopLabel, serviceType, items) {
-  const header = `
-    <div class="schedule-item">
-      <div class="left">
-        <div class="depart">${escapeHtml(dateStr)}</div>
-        <div class="arrive">${escapeHtml(stopLabel)} で検索中</div>
+function renderSchedule(dateStr, stopLabel, serviceType, items, departures, now) {
+  const currentLine = dateStr === now.date ? now.time : '';
+  const hours = Array.from({ length: 17 }, (_, index) => 6 + index);
+  const hasCurrentLine = Boolean(currentLine);
+  const currentMinute = hasCurrentLine ? toMinutes(currentLine) : null;
+  const firstMinute = toMinutes('06:00');
+  const lastMinute = toMinutes('23:00');
+  const linePosition = hasCurrentLine
+    ? Math.max(0, Math.min(100, ((currentMinute - firstMinute) / (lastMinute - firstMinute)) * 100))
+    : null;
+
+  const chipsByHour = new Map();
+  for (const departure of departures) {
+    const hour = Number(departure.slice(0, 2));
+    if (!chipsByHour.has(hour)) {
+      chipsByHour.set(hour, []);
+    }
+    chipsByHour.get(hour).push(departure);
+  }
+
+  const currentLabel = hasCurrentLine ? `現在時刻 ${currentLine}` : `${dateStr} の選択時刻`;
+  elements.timelineSubtitle.textContent = `${stopLabel} · ${currentLabel} · ${serviceType} · 1日の便一覧`;
+
+  elements.scheduleList.innerHTML = `
+    <div class="timeline-track">
+      <div class="timeline-intro">日中の便を上から順に表示しています</div>
+      <div class="timeline-hours">
+        ${hasCurrentLine ? `<div class="timeline-now" style="top: ${linePosition}%;"><span>${escapeHtml(currentLine)}</span></div>` : ''}
+        ${hours.map((hour) => {
+          const departuresInHour = chipsByHour.get(hour) || [];
+          return `
+            <section class="timeline-hour">
+              <div class="timeline-hour-label">${pad2(hour)}:00</div>
+              <div class="timeline-hour-body">
+                <div class="timeline-hour-line"></div>
+                ${departuresInHour.map((departure) => {
+                  const minute = Number(departure.slice(3, 5));
+                  const minutePosition = Math.max(0, Math.min(100, (minute / 60) * 100));
+                  return `
+                    <div class="timeline-chip" style="top: ${minutePosition}%;">
+                      <span class="timeline-dot"></span>
+                      <strong>${escapeHtml(departure)}</strong>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </section>
+          `;
+        }).join('')}
       </div>
-      <div>${escapeHtml(serviceType)}</div>
     </div>
   `;
 
-  const body = items.length
-    ? items.map((item) => `
-      <div class="schedule-item">
-        <div class="left">
-          <div class="depart">${escapeHtml(item.departure)} 発</div>
-          <div class="arrive">到着 ${escapeHtml(item.arrivalMin)} - ${escapeHtml(item.arrivalMax)}</div>
-        </div>
-        <div>次便候補</div>
-      </div>
-    `).join('')
-    : `
-      <div class="schedule-item">
-        <div class="left">
-          <div class="depart">本日のバスは終了しました</div>
-          <div class="arrive">${escapeHtml(stopLabel)}</div>
-        </div>
-        <div>${escapeHtml(serviceType)}</div>
-      </div>
-    `;
-
-  elements.scheduleList.innerHTML = header + body;
+  if (serviceType === '運休') {
+    elements.note.textContent = 'この日は運休です。';
+  } else if (items.length === 0) {
+    elements.note.textContent = '本日のバスは終了しました';
+  } else {
+    elements.note.textContent = `次の便は ${items[0].departure} 発、到着目安は ${items[0].arrival} です。`;
+  }
 }
 
 function applyResult(result) {
-  elements.currentTime.textContent = `${result.date} ${result.time}`;
+  activeResult = result;
+  const now = formatTokyoNow();
+  elements.currentTime.textContent = now.display;
   elements.serviceType.textContent = result.serviceType;
   elements.selectedStopLabel.textContent = result.stopLabel;
   elements.resultMessage.textContent = result.message || '検索完了';
   elements.resultDetail.textContent = result.nextDeparture
-    ? `次の便: ${result.nextDeparture} / 到着目安: ${result.arrivalMin} - ${result.arrivalMax}`
+    ? `${result.stopLabel} / ${result.serviceType}`
     : result.message;
   renderUpcoming(result.upcoming);
-  renderSchedule(result.date, result.stopLabel, result.serviceType, result.upcoming);
+  renderSchedule(result.date, result.stopLabel, result.serviceType, result.upcoming, departuresForDate(result.date, result.stopKey), now);
+}
+
+function refreshLiveClock() {
+  if (!activeResult) {
+    return;
+  }
+
+  const now = formatTokyoNow();
+  elements.currentTime.textContent = now.display;
+  renderSchedule(
+    activeResult.date,
+    activeResult.stopLabel,
+    activeResult.serviceType,
+    activeResult.upcoming,
+    departuresForDate(activeResult.date, activeResult.stopKey),
+    now,
+  );
 }
 
 function syncRouteInfo() {
-  elements.routeLabel.textContent = `${timetable.meta.route} · ${timetable.meta.year}年${timetable.meta.term} · GitHub Pages版`;
+  elements.routeLabel.textContent = '東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル';
   elements.routeName.textContent = timetable.meta.route;
-  elements.note.textContent = `旅程時間は ${timetable.meta.travel_time_minutes.min}〜${timetable.meta.travel_time_minutes.max} 分の概算です。現在時刻検索は Asia/Tokyo 基準で処理しています。`;
+  elements.note.textContent = `1日の便を時刻順に追える表示です。赤線が現在時刻、点が発車時刻です。`;
 }
 
 function populateStops() {
@@ -288,6 +325,12 @@ async function init() {
 
   const initial = buildResult(elements.date.value, elements.time.value, elements.stop.value);
   applyResult(initial);
+
+  if (liveClockTimer) {
+    clearInterval(liveClockTimer);
+  }
+  liveClockTimer = window.setInterval(refreshLiveClock, 30000);
+  refreshLiveClock();
 
   elements.searchBtn.addEventListener('click', () => runSearch('next'));
   elements.nowBtn.addEventListener('click', () => {
