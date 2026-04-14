@@ -72,16 +72,13 @@ select {
   background: rgba(240, 140, 0, 0.22);
 }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+.hero-title {
+  display: block;
   font-size: clamp(14px, 2vw, 18px);
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1.4;
+  color: #fff;
 }
 
 .meta-grid {
@@ -121,7 +118,7 @@ select {
 .site-footer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
   margin: 18px auto 0;
   padding: 6px 12px 0;
@@ -133,6 +130,31 @@ select {
   margin: 0;
   font-size: 12px;
   line-height: 1.7;
+}
+
+.footer-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.footer-sources span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.footer-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer-source-links a {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .footer-links {
@@ -157,6 +179,10 @@ select {
 
 .footer-links a:hover {
   background: #fff;
+}
+
+.footer-source-links a:hover {
+  text-decoration: underline;
 }
 
 .footer-links svg {
@@ -674,10 +700,8 @@ select:focus {
     height: 180px;
   }
 
-  .eyebrow {
+  .hero-title {
     width: 100%;
-    justify-content: center;
-    padding: 10px 14px;
     font-size: 14px;
     text-align: center;
   }
