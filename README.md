@@ -1,51 +1,39 @@
-# TMU Bus Timetable Prototype
+# 東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル
 
-Goで作った、八王子キャンパス連絡バスのプロトタイプです。
+東京都立大学の南大沢キャンパスと日野キャンパスを結ぶ連絡バス向けの、静的な時刻表ビューア
 
-GitHub Pages で動かす静的版も追加しています。`index.html` をそのまま Pages の公開対象にできます。
+## できること
 
-できること:
+- 指定した日時から次の便を表示する
+- 現在時刻を使って、直近の便を調べる
+- 当日の運行種別を表示する
+- スマホでも見やすいレスポンシブUIで確認する
 
-- 指定した日時から次に乗れるバスを表示
-- 現在時刻を使って、今乗れる便と到着目安を表示
-- 最終便を過ぎたら「本日のバスは終了しました」と表示
-- スマホでも見やすいレスポンシブUI
-
-## 起動
-
-```bash
-go run .
-```
-
-ブラウザで `http://localhost:8080` を開いてください。
-
-静的版をローカルで確認するなら、次を実行してください。
+## ローカル確認
 
 ```bash
 python3 serve.py
 ```
 
-その後、`http://127.0.0.1:8000` を開くと GitHub Pages 向けの静的版が見られます。
+起動後に `http://127.0.0.1:8000` 
 
-環境変数 `PORT` を指定すると、ポートを変更できます。
+## ファイル構成
 
-```bash
-PORT=3000 go run .
-```
+- `index.html`: 画面のマークアップ
+- `app.js`: 検索、時刻計算、画面更新
+- `styles.css`: UIスタイル
+- `serve.py`: ローカル確認用の簡易サーバー
+- `data/2026/first/bus_calendar.json`: 運行日データ
+- `data/2026/first/bus_timetable.json`: 時刻表データ
+- `data/2026/first/app.py`: データ確認用CLI
 
-## API
+## データ
 
-- `GET /api/now?stop=hino`
-- `GET /api/next?stop=hino&date=2026-04-08&time=16:00`
-
-## GitHub Pages
-
-- `index.html`、`app.js`、`styles.css` が静的版です。
-- `data/2026/first/bus_calendar.json` と `data/2026/first/bus_timetable.json` をブラウザ側で読み込みます。
-- 現在時刻の判定はブラウザの `Asia/Tokyo` 表示を使います。
+- 現在は `data/2026/first/` 配下の 2026年度前期データを読み込みます
+- 現在時刻の判定はブラウザ側で `Asia/Tokyo` を使います
 
 ## 停留所
 
-- `minamiosawa_east` - 南大沢キャンパス東
-- `minamiosawa_west` - 南大沢キャンパス西
-- `hino` - 日野キャンパス
+- `minamiosawa_east`: 南大沢キャンパス東
+- `minamiosawa_west`: 南大沢キャンパス西
+- `hino`: 日野キャンパス
