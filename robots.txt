@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tenxnet.github.io/TMU_BusTimetable/sitemap.xml
