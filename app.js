@@ -370,7 +370,6 @@ async function runSearch(kind) {
     const timeStr = elements.time.value;
     const result = buildResult(dateStr, timeStr, stopKey);
     applyResult(result);
-    window.history.replaceState(null, '', `?stop=${encodeURIComponent(stopKey)}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(timeStr)}`);
   } finally {
     setBusy(false);
   }
@@ -385,11 +384,10 @@ async function init() {
   populateStops();
   syncRouteInfo();
 
-  const params = new URLSearchParams(window.location.search);
   const now = formatTokyoNow();
-  elements.date.value = params.get('date') || now.date;
-  elements.time.value = params.get('time') || now.time;
-  elements.stop.value = params.get('stop') || 'hino';
+  elements.date.value = now.date;
+  elements.time.value = now.time;
+  elements.stop.value = 'hino';
 
   const initial = buildResult(elements.date.value, elements.time.value, elements.stop.value);
   applyResult(initial);
