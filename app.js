@@ -287,6 +287,20 @@ function renderSchedule(dateStr, stopLabel, serviceType, items, departures, mark
     ? ((markerMinute - firstMinute) / (lastMinute - firstMinute)) * 100
     : null;
 
+  // チップの高さぶん（約25分）以内に続く便は重なるので、横にずらした列に置く
+  const laneGapMinutes = 28;
+  const laneLastMinutes = [];
+  const laneByDeparture = new Map();
+  for (const departure of departures) {
+    const minute = toMinutes(departure);
+    let lane = laneLastMinutes.findIndex((last) => minute - last >= laneGapMinutes);
+    if (lane === -1) {
+      lane = laneLastMinutes.length;
+    }
+    laneLastMinutes[lane] = minute;
+    laneByDeparture.set(departure, lane);
+  }
+
   const chipsByHour = new Map();
   for (const departure of departures) {
     const hour = Number(departure.slice(0, 2));
@@ -318,7 +332,7 @@ function renderSchedule(dateStr, stopLabel, serviceType, items, departures, mark
                   const minute = Number(departure.slice(3, 5));
                   const minutePosition = Math.max(0, Math.min(100, (minute / 60) * 100));
                   return `
-                    <div class="timeline-chip" style="top: ${minutePosition}%;">
+                    <div class="timeline-chip" style="top: ${minutePosition}%; --lane: ${laneByDeparture.get(departure)};">
                       <span class="timeline-dot"></span>
                       <strong>${escapeHtml(departure)}</strong>
                     </div>

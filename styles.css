@@ -618,7 +618,9 @@ select:focus {
 
 .timeline-chip {
   position: absolute;
-  left: 18px;
+  --lane: 0;
+  --lane-width: 96px;
+  left: calc(18px + var(--lane) * var(--lane-width));
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -861,9 +863,10 @@ select:focus {
   }
 
   .timeline-chip {
-    left: 16px;
+    --lane-width: 88px;
+    left: calc(16px + var(--lane) * var(--lane-width));
     max-width: calc(100% - 18px);
-    padding: 6px 10px;
+    padding: 4px 10px;
   }
 
   .timeline-chip strong {
