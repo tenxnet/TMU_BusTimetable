@@ -561,35 +561,45 @@ select:focus {
 
 .timeline-hours {
   position: relative;
+  --timeline-hour-height: 74px;
 }
 
 .timeline-hour {
+  position: relative;
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
   gap: 12px;
   align-items: stretch;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(19, 32, 46, 0.06);
+  padding: 0 12px;
+  height: var(--timeline-hour-height);
 }
 
-.timeline-hour:last-child {
-  border-bottom: 0;
+/* 区切り線は絶対配置で描く。1時間=1行の高さを保つため、行の高さに影響させない */
+.timeline-hour::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 1px;
+  background: rgba(19, 32, 46, 0.06);
+}
+
+.timeline-hour:last-child::after {
+  content: none;
 }
 
 .timeline-hour-label {
-  position: sticky;
-  top: 0;
   align-self: start;
   font-weight: 800;
   color: var(--muted);
   font-size: 13px;
   line-height: 1;
-  padding-top: 8px;
 }
 
 .timeline-hour-body {
   position: relative;
-  height: 74px;
+  height: 100%;
   padding-left: 18px;
 }
 
@@ -823,10 +833,19 @@ select:focus {
     font-size: 11px;
   }
 
+  .timeline-hours {
+    --timeline-hour-height: 66px;
+  }
+
   .timeline-hour {
     grid-template-columns: 56px minmax(0, 1fr);
     gap: 10px;
-    padding: 9px 10px;
+    padding: 0 10px;
+  }
+
+  .timeline-hour::after {
+    left: 10px;
+    right: 10px;
   }
 
   .timeline-hour-label {
@@ -834,7 +853,6 @@ select:focus {
   }
 
   .timeline-hour-body {
-    height: 66px;
     padding-left: 16px;
   }
 

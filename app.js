@@ -34,6 +34,7 @@ let calendar = null;
 let activeResult = null;
 let liveClockTimer = null;
 let calendarMonth = '';
+let liveMode = true;
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -259,15 +260,15 @@ function renderCalendar(dateStr) {
   elements.calendarGrid.innerHTML = cells.join('');
 }
 
-function renderSchedule(dateStr, stopLabel, serviceType, items, departures, now) {
-  const currentLine = dateStr === now.date ? now.time : '';
+function renderSchedule(dateStr, stopLabel, serviceType, items, departures, markerTime, isLive) {
   const hours = Array.from({ length: 17 }, (_, index) => 6 + index);
-  const hasCurrentLine = Boolean(currentLine);
-  const currentMinute = hasCurrentLine ? toMinutes(currentLine) : null;
-  const firstMinute = toMinutes('06:00');
-  const lastMinute = toMinutes('23:00');
+  // 目盛は hours の各行がちょうど1時間ぶんの高さを占める前提。行と同じ基準で位置を出す
+  const firstMinute = hours[0] * 60;
+  const lastMinute = (hours[hours.length - 1] + 1) * 60;
+  const markerMinute = toMinutes(markerTime);
+  const hasCurrentLine = markerMinute >= firstMinute && markerMinute <= lastMinute;
   const linePosition = hasCurrentLine
-    ? Math.max(0, Math.min(100, ((currentMinute - firstMinute) / (lastMinute - firstMinute)) * 100))
+    ? ((markerMinute - firstMinute) / (lastMinute - firstMinute)) * 100
     : null;
 
   const chipsByHour = new Map();
@@ -279,14 +280,17 @@ function renderSchedule(dateStr, stopLabel, serviceType, items, departures, now)
     chipsByHour.get(hour).push(departure);
   }
 
-  const currentLabel = hasCurrentLine ? `現在時刻 ${currentLine}` : `${dateStr} の選択時刻`;
+  const currentLabel = isLive ? `現在時刻 ${markerTime}` : `選択時刻 ${markerTime}`;
   elements.timelineSubtitle.textContent = `${stopLabel} · ${currentLabel} · ${serviceType}`;
+
+  const previousTrack = elements.scheduleList.querySelector('.timeline-track');
+  const previousScroll = previousTrack ? previousTrack.scrollTop : null;
 
   elements.scheduleList.innerHTML = `
     <div class="timeline-track">
       <div class="timeline-intro">日中の便を上から順に表示しています</div>
       <div class="timeline-hours">
-        ${hasCurrentLine ? `<div class="timeline-now" style="top: ${linePosition}%;"><span>${escapeHtml(currentLine)}</span></div>` : ''}
+        ${hasCurrentLine ? `<div class="timeline-now" style="top: ${linePosition}%;"><span>${escapeHtml(markerTime)}</span></div>` : ''}
         ${hours.map((hour) => {
           const departuresInHour = chipsByHour.get(hour) || [];
           return `
@@ -312,6 +316,18 @@ function renderSchedule(dateStr, stopLabel, serviceType, items, departures, now)
     </div>
   `;
 
+  const track = elements.scheduleList.querySelector('.timeline-track');
+  const marker = track.querySelector('.timeline-now');
+
+  if (previousScroll !== null) {
+    // 30秒ごとの再描画でスクロール位置を先頭に戻さない
+    track.scrollTop = previousScroll;
+  } else if (marker) {
+    // 初回は目盛の先頭ではなく基準時刻の付近を開く
+    const offset = marker.getBoundingClientRect().top - track.getBoundingClientRect().top;
+    track.scrollTop = Math.max(0, offset - track.clientHeight / 2);
+  }
+
   if (serviceType === '運休') {
     elements.note.textContent = 'この日は運休です。';
   } else if (items.length === 0) {
@@ -330,7 +346,20 @@ function applyResult(result) {
   elements.selectedStopLabel.textContent = result.stopLabel;
   renderUpcoming(result.upcoming);
   renderCalendar(result.date);
-  renderSchedule(result.date, result.stopLabel, result.serviceType, result.upcoming, departuresForDate(result.date, result.stopKey), now);
+  renderSchedule(
+    result.date,
+    result.stopLabel,
+    result.serviceType,
+    result.upcoming,
+    departuresForDate(result.date, result.stopKey),
+    result.time,
+    liveMode,
+  );
+}
+
+function syncLiveMode() {
+  const now = formatTokyoNow();
+  liveMode = elements.date.value === now.date && elements.time.value === now.time;
 }
 
 function refreshLiveClock() {
@@ -340,13 +369,29 @@ function refreshLiveClock() {
 
   const now = formatTokyoNow();
   elements.currentTime.textContent = now.display;
+
+  if (liveMode) {
+    // 現在時刻に追従している間は次の便も取り直す
+    if (now.date !== activeResult.date) {
+      elements.date.value = now.date;
+      elements.time.value = now.time;
+      applyResult(buildResult(now.date, now.time, activeResult.stopKey));
+      return;
+    }
+
+    elements.time.value = now.time;
+    activeResult = buildResult(now.date, now.time, activeResult.stopKey);
+    renderUpcoming(activeResult.upcoming);
+  }
+
   renderSchedule(
     activeResult.date,
     activeResult.stopLabel,
     activeResult.serviceType,
     activeResult.upcoming,
     departuresForDate(activeResult.date, activeResult.stopKey),
-    now,
+    activeResult.time,
+    liveMode,
   );
 }
 
@@ -368,6 +413,7 @@ async function runSearch(kind) {
     const stopKey = elements.stop.value;
     const dateStr = elements.date.value;
     const timeStr = elements.time.value;
+    syncLiveMode();
     const result = buildResult(dateStr, timeStr, stopKey);
     applyResult(result);
   } finally {
@@ -388,6 +434,7 @@ async function init() {
   elements.date.value = now.date;
   elements.time.value = now.time;
   elements.stop.value = 'hino';
+  liveMode = true;
 
   const initial = buildResult(elements.date.value, elements.time.value, elements.stop.value);
   applyResult(initial);
@@ -403,6 +450,7 @@ async function init() {
     const current = formatTokyoNow();
     elements.date.value = current.date;
     elements.time.value = current.time;
+    liveMode = true;
     applyResult(buildResult(current.date, current.time, elements.stop.value));
   });
 
@@ -411,10 +459,12 @@ async function init() {
   });
 
   elements.date.addEventListener('change', () => {
+    syncLiveMode();
     applyResult(buildResult(elements.date.value, elements.time.value, elements.stop.value));
   });
 
   elements.time.addEventListener('change', () => {
+    syncLiveMode();
     applyResult(buildResult(elements.date.value, elements.time.value, elements.stop.value));
   });
 
