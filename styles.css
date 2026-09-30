@@ -440,6 +440,10 @@ select:focus {
   background: rgba(11, 114, 133, 0.08);
 }
 
+.calendar-day-three-bus {
+  background: rgba(11, 114, 133, 0.2);
+}
+
 .calendar-day-one-bus {
   background: rgba(240, 140, 0, 0.12);
 }

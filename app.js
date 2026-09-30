@@ -1,5 +1,8 @@
-const calendarUrl = './data/2026/first/bus_calendar.json';
-const timetableUrl = './data/2026/first/bus_timetable.json';
+// 学期ごとのデータ。日付はどれか1つの学期の運行日データにだけ含まれる
+const termDirs = [
+  './data/2026/first',
+  './data/2026/second',
+];
 const timeLayout = '15:04';
 const stopLabels = {
   minamiosawa_east: '南大沢キャンパス東',
@@ -29,8 +32,9 @@ const elements = {
   note: document.getElementById('note'),
 };
 
+let terms = [];
+// ルート名・停留所・所要時間など学期共通の表示には最新学期の meta を使う
 let timetable = null;
-let calendar = null;
 let activeResult = null;
 let liveClockTimer = null;
 let calendarMonth = '';
@@ -87,20 +91,29 @@ function shiftMonth(monthKey, delta) {
   return `${shifted.getFullYear()}-${pad2(shifted.getMonth() + 1)}`;
 }
 
+function serviceForDate(dateStr) {
+  for (const term of terms) {
+    for (const serviceType of Object.keys(term.timetable.timetables)) {
+      if (term.calendar[`${serviceType}_dates`]?.includes(dateStr)) {
+        return { term, serviceType };
+      }
+    }
+  }
+  return { term: null, serviceType: 'no_service' };
+}
+
 function serviceTypeForDate(dateStr) {
-  if (calendar.two_bus_dates.includes(dateStr)) {
-    return 'two_bus';
-  }
-  if (calendar.one_bus_dates.includes(dateStr)) {
-    return 'one_bus';
-  }
-  return 'no_service';
+  return serviceForDate(dateStr).serviceType;
 }
 
 function serviceTypeLabel(serviceType) {
   switch (serviceType) {
     case 'two_bus':
       return '2台運行';
+    case 'three_bus_all':
+      return '3台運行（日野デー終日）';
+    case 'three_bus_pm':
+      return '3台運行（日野デー午後）';
     case 'one_bus':
       return '1台運行';
     default:
@@ -109,11 +122,11 @@ function serviceTypeLabel(serviceType) {
 }
 
 function departuresForDate(dateStr, stopKey) {
-  const serviceType = serviceTypeForDate(dateStr);
+  const { term, serviceType } = serviceForDate(dateStr);
   if (serviceType === 'no_service') {
     return [];
   }
-  return [...timetable.timetables[serviceType][stopKey]];
+  return [...term.timetable.timetables[serviceType][stopKey]];
 }
 
 function buildUpcoming(dateStr, departures, timeStr) {
@@ -232,6 +245,9 @@ function renderCalendar(dateStr) {
     if (serviceType === 'two_bus') {
       classes.push('calendar-day-two-bus');
       badge = '<small>2台</small>';
+    } else if (serviceType === 'three_bus_all' || serviceType === 'three_bus_pm') {
+      classes.push('calendar-day-three-bus');
+      badge = '<small>3台</small>';
     } else if (serviceType === 'one_bus') {
       classes.push('calendar-day-one-bus');
       badge = '<small>1台</small>';
@@ -256,7 +272,7 @@ function renderCalendar(dateStr) {
   }
 
   elements.calendarTitle.textContent = monthLabel;
-  elements.calendarCaption.textContent = '2台運行日 / 1台運行日 / 運休を色分けしています';
+  elements.calendarCaption.textContent = '3台（日野デー） / 2台 / 1台 / 運休を色分けしています';
   elements.calendarGrid.innerHTML = cells.join('');
 }
 
@@ -422,10 +438,14 @@ async function runSearch(kind) {
 }
 
 async function init() {
-  [calendar, timetable] = await Promise.all([
-    fetch(calendarUrl).then((response) => response.json()),
-    fetch(timetableUrl).then((response) => response.json()),
-  ]);
+  terms = await Promise.all(termDirs.map(async (dir) => {
+    const [calendar, termTimetable] = await Promise.all([
+      fetch(`${dir}/bus_calendar.json`).then((response) => response.json()),
+      fetch(`${dir}/bus_timetable.json`).then((response) => response.json()),
+    ]);
+    return { calendar, timetable: termTimetable };
+  }));
+  timetable = terms[terms.length - 1].timetable;
 
   populateStops();
   syncRouteInfo();
