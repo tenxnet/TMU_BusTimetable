@@ -4,21 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light">
-  <title>都立大バス時刻表 | 東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル</title>
+  <title>都立大連絡バス時刻表｜南大沢・日野の次の便を検索</title>
   <meta name="description" content="東京都立大学の南大沢・日野キャンパス間を結ぶ連絡バスの時刻表。南大沢キャンパス東・西、日野キャンパスの各停留所から、次の発車時刻・到着目安・運行日を確認できます。">
   <link rel="canonical" href="https://tenxnet.github.io/TMU_BusTimetable/">
-  <meta property="og:title" content="都立大バス時刻表 | 東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル">
+  <meta property="og:title" content="都立大連絡バス時刻表｜南大沢・日野の次の便を検索">
   <meta property="og:description" content="東京都立大学の南大沢・日野キャンパス間を結ぶ連絡バスの時刻表。南大沢キャンパス東・西、日野キャンパスの各停留所から、次の発車時刻・到着目安・運行日を確認できます。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tenxnet.github.io/TMU_BusTimetable/">
   <meta property="og:locale" content="ja_JP">
   <link rel="icon" type="image/png" href="assets/icon.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2026-10-02">
 </head>
 <body>
   <main class="shell">
     <section class="hero">
-      <h1 class="hero-title" id="route-label">東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル</h1>
+      <h1 class="hero-title" id="route-label">東京都立大学 南大沢・日野キャンパス連絡バス時刻表</h1>
 
       <div class="meta-grid">
         <article class="meta-card">
@@ -34,18 +34,30 @@
           <strong id="route-name">--</strong>
         </article>
         <article class="meta-card">
-          <span>初期停留所</span>
+          <span>選択中の停留所</span>
           <strong id="selected-stop-label">--</strong>
         </article>
       </div>
     </section>
+
+    <nav class="direction-nav" aria-label="方面別の時刻表">
+      <a href="hino/">日野発の時刻表・乗り場</a>
+      <a href="minamiosawa/">南大沢発の時刻表・東西の乗り場</a>
+    </nav>
+
+    <!-- BEGIN DATA COVERAGE -->
+    <div class="data-coverage">
+      <p id="data-coverage">掲載データ：2026年度後期（<time datetime="2026-10-01">2026年10月1日</time>〜<time datetime="2027-03-31">2027年3月31日</time>）<br>運行日程の確認日：<time datetime="2026-10-02">2026年10月2日</time></p>
+      <a id="calendar-source" href="https://www.tmu.ac.jp/extra/download.html?d=assets/files/download/campus/20260914_bus.pdf">運行日程の出典</a>
+    </div>
+    <!-- END DATA COVERAGE -->
 
     <noscript>
       <p class="panel note">時刻表の検索にはJavaScriptが必要です。JavaScriptを利用できない場合は、<a href="https://www.tmu.ac.jp/campuslife_career/facility/minamiosawa_hino.html">東京都立大学公式の連絡バス時刻表・運行日程</a>をご確認ください。</p>
     </noscript>
 
     <section class="layout">
-      <section class="panel">
+      <section class="panel" id="search">
         <h2>検索</h2>
         <div class="form-grid">
           <div>
@@ -96,7 +108,7 @@
       <aside class="panel timeline-panel">
         <div class="timeline-head">
           <div>
-            <h2>本日の運行スケジュール</h2>
+            <h2>運行スケジュール</h2>
             <p id="timeline-subtitle">運行日ごとの便を表示します</p>
           </div>
           <div class="timeline-legend">
@@ -112,8 +124,20 @@
     <section class="panel site-guide" aria-labelledby="guide-title">
       <h2 id="guide-title">都立大連絡バスの時刻表について</h2>
       <p>東京都立大学の南大沢キャンパスと日野キャンパスを結ぶ連絡バスの時刻表です。南大沢キャンパス東・南大沢キャンパス西・日野キャンパスの各停留所について、次の発車時刻と到着目安を確認できます。</p>
-      <p>停留所・日付・時刻を選ぶと、その条件での便を表示します。「現在時刻で検索」で直近の便を調べられます。カレンダーでは、1台・2台・3台（日野デー）の運行日と運休日を確認できます。</p>
+      <p>停留所・日付・時刻を選ぶと、その条件での便を表示します。「現在時刻で検索」で直近の便を調べられます。カレンダーでは、1台・2台・3台（日野デー）の運行日と運休日を確認できます。3台運行は、臨時便が終日ある日と午後のみの日で時刻表が異なります。曜日だけで判断せず、日付ごとの運行区分をご確認ください。</p>
+      <p>対応期間外の日付は「データ未確認」と表示します。期間内の「運休」とは区別しています。到着時刻は目安です。道路状況などで変わるため、余裕を持ってご利用ください。</p>
       <p>最新の運行日程や変更のお知らせは、<a href="https://www.tmu.ac.jp/campuslife_career/facility/minamiosawa_hino.html">東京都立大学公式の連絡バス情報</a>をご確認ください。</p>
+    </section>
+
+    <section class="panel site-guide" aria-labelledby="boarding-title">
+      <h2 id="boarding-title">乗り場と乗車方法</h2>
+      <dl class="boarding-list">
+        <dt>日野キャンパス</dt><dd>6号館前のロータリー広場</dd>
+        <dt>南大沢キャンパス東</dt><dd>9〜10号館間の北側道路部分</dd>
+        <dt>南大沢キャンパス西</dt><dd>6号館地下駐車場入口付近</dd>
+      </dl>
+      <p>運賃は無料です。乗車時に、学生は学生証、教職員は教職員証を乗務員に提示してください。</p>
+      <p><a href="https://www.tmu.ac.jp/extra/download.html?d=assets/files/download/campus/1159/20240227_busstop.pdf">公式の乗降場地図（PDF）</a>で位置を確認できます。乗車方法の出典は<a href="https://www.tmu.ac.jp/campuslife_career/facility/minamiosawa_hino/38910.html?d=assets/files/download/campus/20260914_news.pdf">2026年度後期の公式お知らせ（2026年9月14日公開）</a>です。</p>
     </section>
 
     <footer class="site-footer">
@@ -142,6 +166,6 @@
     </footer>
   </main>
 
-  <script src="app.js" type="module"></script>
+  <script src="app.js?v=2026-10-02" type="module"></script>
 </body>
 </html>

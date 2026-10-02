@@ -1,0 +1,28 @@
+{
+  "currentTerm": "2026-second",
+  "updated": "2026-10-02",
+  "officialPage": "https://www.tmu.ac.jp/campuslife_career/facility/minamiosawa_hino.html",
+  "boardingMap": "https://www.tmu.ac.jp/extra/download.html?d=assets/files/download/campus/1159/20240227_busstop.pdf",
+  "terms": [
+    {
+      "id": "2026-first",
+      "label": "2026年度前期",
+      "directory": "data/2026/first",
+      "validFrom": "2026-04-01",
+      "validThrough": "2026-09-30",
+      "calendarSource": "https://tenxnet.github.io/TMU_BusTimetable/data/2026/first/202603_bus_nittei.pdf",
+      "calendarVerifiedOn": "2026-10-02"
+    },
+    {
+      "id": "2026-second",
+      "label": "2026年度後期",
+      "directory": "data/2026/second",
+      "validFrom": "2026-10-01",
+      "validThrough": "2027-03-31",
+      "calendarSource": "https://www.tmu.ac.jp/extra/download.html?d=assets/files/download/campus/20260914_bus.pdf",
+      "calendarVerifiedOn": "2026-10-02",
+      "noticeSource": "https://www.tmu.ac.jp/campuslife_career/facility/minamiosawa_hino/38910.html?d=assets/files/download/campus/20260914_news.pdf",
+      "noticePublishedOn": "2026-09-14"
+    }
+  ]
+}

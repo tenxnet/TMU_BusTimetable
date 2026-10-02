@@ -1,9 +1,5 @@
-// 学期ごとのデータ。日付はどれか1つの学期の運行日データにだけ含まれる
-const termDirs = [
-  './data/2026/first',
-  './data/2026/second',
-];
-const timeLayout = '15:04';
+// 対応期間と出典は静的な案内ページと同じ学期定義から読み込む。
+const termRegistryPath = './data/terms.json';
 const stopLabels = {
   minamiosawa_east: '南大沢キャンパス東',
   minamiosawa_west: '南大沢キャンパス西',
@@ -11,7 +7,6 @@ const stopLabels = {
 };
 
 const elements = {
-  routeLabel: document.getElementById('route-label'),
   currentTime: document.getElementById('current-time'),
   serviceType: document.getElementById('service-type'),
   routeName: document.getElementById('route-name'),
@@ -30,10 +25,13 @@ const elements = {
   calendarGrid: document.getElementById('calendar-grid'),
   scheduleList: document.getElementById('schedule-list'),
   note: document.getElementById('note'),
+  dataCoverage: document.getElementById('data-coverage'),
+  calendarSource: document.getElementById('calendar-source'),
 };
 
 let terms = [];
-// ルート名・停留所・所要時間など学期共通の表示には最新学期の meta を使う
+let termRegistry = null;
+// ルート名・停留所など共通の表示には指定された現行学期の meta を使う。
 let timetable = null;
 let activeResult = null;
 let liveClockTimer = null;
@@ -64,6 +62,9 @@ function formatTokyoNow(date = new Date()) {
 }
 
 function toMinutes(value) {
+  if (!isValidTime(value)) {
+    return NaN;
+  }
   const [hours, minutes] = value.split(':').map(Number);
   return hours * 60 + minutes;
 }
@@ -80,6 +81,29 @@ function parseDateParts(dateStr) {
   return { year, month, day };
 }
 
+function isValidDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number(value.slice(0, 4)) > 0
+    && !Number.isNaN(date.getTime())
+    && date.toISOString().slice(0, 10) === value;
+}
+
+function isValidTime(value) {
+  return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function isKnownStop(stopKey) {
+  return Object.prototype.hasOwnProperty.call(stopLabels, stopKey);
+}
+
+function initialStop(search) {
+  const stopKey = new URLSearchParams(search).get('stop');
+  return isKnownStop(stopKey) ? stopKey : 'hino';
+}
+
 function monthKeyForDate(dateStr) {
   const { year, month } = parseDateParts(dateStr);
   return `${year}-${pad2(month)}`;
@@ -92,14 +116,19 @@ function shiftMonth(monthKey, delta) {
 }
 
 function serviceForDate(dateStr) {
-  for (const term of terms) {
-    for (const serviceType of Object.keys(term.timetable.timetables)) {
-      if (term.calendar[`${serviceType}_dates`]?.includes(dateStr)) {
-        return { term, serviceType };
-      }
+  if (!isValidDate(dateStr)) {
+    return { term: null, serviceType: 'unknown' };
+  }
+  const term = terms.find((item) => dateStr >= item.validFrom && dateStr <= item.validThrough);
+  if (!term) {
+    return { term: null, serviceType: 'unknown' };
+  }
+  for (const serviceType of Object.keys(term.timetable.timetables)) {
+    if (term.calendar[`${serviceType}_dates`]?.includes(dateStr)) {
+      return { term, serviceType };
     }
   }
-  return { term: null, serviceType: 'no_service' };
+  return { term, serviceType: 'no_service' };
 }
 
 function serviceTypeForDate(dateStr) {
@@ -116,21 +145,27 @@ function serviceTypeLabel(serviceType) {
       return '3台運行（日野デー午後）';
     case 'one_bus':
       return '1台運行';
-    default:
+    case 'no_service':
       return '運休';
+    default:
+      return 'データ未確認';
   }
 }
 
 function departuresForDate(dateStr, stopKey) {
   const { term, serviceType } = serviceForDate(dateStr);
-  if (serviceType === 'no_service') {
+  if (!term || serviceType === 'no_service' || !isKnownStop(stopKey)) {
     return [];
   }
-  return [...term.timetable.timetables[serviceType][stopKey]];
+  return [...(term.timetable.timetables[serviceType][stopKey] || [])];
 }
 
 function buildUpcoming(dateStr, departures, timeStr) {
-  const rideMin = timetable.meta.travel_time_minutes.min;
+  if (!isValidTime(timeStr) || departures.length === 0) {
+    return [];
+  }
+  const { term } = serviceForDate(dateStr);
+  const rideMin = (term?.timetable || timetable).meta.travel_time_minutes.min;
   const currentMinutes = toMinutes(timeStr);
   const upcoming = [];
 
@@ -154,22 +189,35 @@ function buildUpcoming(dateStr, departures, timeStr) {
 }
 
 function buildResult(dateStr, timeStr, stopKey) {
-  const stopLabel = stopLabels[stopKey];
+  const validInput = isValidDate(dateStr) && isValidTime(timeStr) && isKnownStop(stopKey);
+  const stopLabel = isKnownStop(stopKey) ? stopLabels[stopKey] : '停留所を選択してください';
   const serviceType = serviceTypeForDate(dateStr);
-  const departures = departuresForDate(dateStr, stopKey);
-  const upcoming = buildUpcoming(dateStr, departures, timeStr);
+  const departures = validInput ? departuresForDate(dateStr, stopKey) : [];
+  const upcoming = validInput ? buildUpcoming(dateStr, departures, timeStr) : [];
 
   const result = {
     stopKey,
     stopLabel,
     date: dateStr,
     time: timeStr,
-    serviceType: serviceTypeLabel(serviceType),
+    serviceType: validInput ? serviceTypeLabel(serviceType) : '入力を確認',
+    serviceCode: validInput ? serviceType : 'invalid',
+    validInput,
     message: '',
     nextDeparture: '',
     arrival: '',
     upcoming,
   };
+
+  if (!validInput) {
+    result.message = '停留所・日付・時刻を正しく入力してください。';
+    return result;
+  }
+
+  if (serviceType === 'unknown') {
+    result.message = 'この日は対応期間外のため、運行データが未確認です。公式の運行日程をご確認ください。';
+    return result;
+  }
 
   if (serviceType === 'no_service') {
     result.message = 'この日は運休です。';
@@ -177,7 +225,7 @@ function buildResult(dateStr, timeStr, stopKey) {
   }
 
   if (upcoming.length === 0) {
-    result.message = '本日のバスは終了しました';
+    result.message = 'この日のバスは終了しました';
     return result;
   }
 
@@ -200,11 +248,11 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function renderUpcoming(items) {
+function renderUpcoming(items, message) {
   if (!items.length) {
     elements.upcomingList.innerHTML = `
       <article class="trip-card">
-        <p class="trip-summary">本日のバスは終了しました</p>
+        <p class="trip-summary">${escapeHtml(message)}</p>
       </article>
     `;
     return;
@@ -223,7 +271,6 @@ function renderUpcoming(items) {
 }
 
 function renderCalendar(dateStr) {
-  const { day } = parseDateParts(dateStr);
   const [year, month] = calendarMonth.split('-').map(Number);
   const monthLabel = `${year}年${month}月`;
   const firstDay = new Date(year, month - 1, 1);
@@ -251,6 +298,9 @@ function renderCalendar(dateStr) {
     } else if (serviceType === 'one_bus') {
       classes.push('calendar-day-one-bus');
       badge = '<small>1台</small>';
+    } else if (serviceType === 'unknown') {
+      classes.push('calendar-day-unknown');
+      badge = '<small>未確認</small>';
     } else {
       classes.push('calendar-day-off');
     }
@@ -264,7 +314,7 @@ function renderCalendar(dateStr) {
     }
 
     cells.push(`
-      <button class="${classes.join(' ')}" type="button" data-date="${currentDate}" aria-pressed="${currentDay === day ? 'true' : 'false'}">
+      <button class="${classes.join(' ')}" type="button" data-date="${currentDate}" aria-pressed="${currentDate === dateStr ? 'true' : 'false'}" aria-label="${currentDate} ${serviceTypeLabel(serviceType)}">
         <strong>${currentDay}</strong>
         ${badge}
       </button>
@@ -272,11 +322,11 @@ function renderCalendar(dateStr) {
   }
 
   elements.calendarTitle.textContent = monthLabel;
-  elements.calendarCaption.textContent = '3台（日野デー） / 2台 / 1台 / 運休を色分けしています';
+  elements.calendarCaption.textContent = '3台（日野デー） / 2台 / 1台 / 運休 / データ未確認を区別しています';
   elements.calendarGrid.innerHTML = cells.join('');
 }
 
-function renderSchedule(dateStr, stopLabel, serviceType, items, departures, markerTime, isLive) {
+function renderSchedule(dateStr, stopLabel, serviceType, items, departures, markerTime, isLive, message) {
   const hours = Array.from({ length: 17 }, (_, index) => 6 + index);
   // 目盛は hours の各行がちょうど1時間ぶんの高さを占める前提。行と同じ基準で位置を出す
   const firstMinute = hours[0] * 60;
@@ -358,32 +408,59 @@ function renderSchedule(dateStr, stopLabel, serviceType, items, departures, mark
     track.scrollTop = Math.max(0, offset - track.clientHeight / 2);
   }
 
-  if (serviceType === '運休') {
-    elements.note.textContent = 'この日は運休です。';
-  } else if (items.length === 0) {
-    elements.note.textContent = '本日のバスは終了しました';
+  if (message) {
+    elements.note.textContent = message;
   } else {
     elements.note.textContent = `次の便は ${items[0].departure} 発、到着目安は ${items[0].arrival} です。`;
   }
 }
 
+function formatCoverageDate(dateStr) {
+  const { year, month, day } = parseDateParts(dateStr);
+  return `${year}年${month}月${day}日`;
+}
+
+function renderCoverage(dateStr) {
+  const { term } = serviceForDate(dateStr);
+  if (term) {
+    elements.dataCoverage.textContent = `${term.label}対応：${formatCoverageDate(term.validFrom)}〜${formatCoverageDate(term.validThrough)}。運行日程の確認日：${formatCoverageDate(term.calendarVerifiedOn)}。`;
+    elements.calendarSource.href = term.calendarSource;
+    elements.calendarSource.textContent = `${term.label}の運行日程の出典`;
+    return;
+  }
+  const from = terms.map((item) => item.validFrom).sort()[0];
+  const through = terms.map((item) => item.validThrough).sort().at(-1);
+  const message = isValidDate(dateStr)
+    ? '選択日は対応期間外のため、運行データは未確認です。'
+    : '日付を入力すると、その日の運行情報を確認できます。';
+  elements.dataCoverage.textContent = `データ対応期間：${formatCoverageDate(from)}〜${formatCoverageDate(through)}。${message}`;
+  elements.calendarSource.href = termRegistry.officialPage;
+  elements.calendarSource.textContent = '大学公式の連絡バス情報';
+}
+
 function applyResult(result) {
   activeResult = result;
-  calendarMonth = monthKeyForDate(result.date);
+  if (isValidDate(result.date)) {
+    calendarMonth = monthKeyForDate(result.date);
+  } else if (!calendarMonth) {
+    calendarMonth = monthKeyForDate(formatTokyoNow().date);
+  }
   const now = formatTokyoNow();
   elements.currentTime.textContent = now.display;
   elements.serviceType.textContent = result.serviceType;
   elements.selectedStopLabel.textContent = result.stopLabel;
-  renderUpcoming(result.upcoming);
+  renderUpcoming(result.upcoming, result.message);
+  renderCoverage(result.date);
   renderCalendar(result.date);
   renderSchedule(
     result.date,
     result.stopLabel,
     result.serviceType,
     result.upcoming,
-    departuresForDate(result.date, result.stopKey),
+    result.validInput ? departuresForDate(result.date, result.stopKey) : [],
     result.time,
     liveMode,
+    result.message,
   );
 }
 
@@ -411,7 +488,7 @@ function refreshLiveClock() {
 
     elements.time.value = now.time;
     activeResult = buildResult(now.date, now.time, activeResult.stopKey);
-    renderUpcoming(activeResult.upcoming);
+    renderUpcoming(activeResult.upcoming, activeResult.message);
   }
 
   renderSchedule(
@@ -419,14 +496,14 @@ function refreshLiveClock() {
     activeResult.stopLabel,
     activeResult.serviceType,
     activeResult.upcoming,
-    departuresForDate(activeResult.date, activeResult.stopKey),
+    activeResult.validInput ? departuresForDate(activeResult.date, activeResult.stopKey) : [],
     activeResult.time,
     liveMode,
+    activeResult.message,
   );
 }
 
 function syncRouteInfo() {
-  elements.routeLabel.textContent = '東京都立大学 南大沢⇔日野キャンパス連絡バス タイムテーブル';
   elements.routeName.textContent = timetable.meta.route;
   elements.note.textContent = `1日の便を時刻順に追える表示です。赤線が現在時刻、点が発車時刻です。`;
 }
@@ -452,14 +529,22 @@ async function runSearch(kind) {
 }
 
 async function init() {
-  terms = await Promise.all(termDirs.map(async (dir) => {
+  async function fetchJson(path) {
+    const response = await fetch(path);
+    if (!response.ok) {
+      throw new Error(`運行データを取得できませんでした (${response.status})`);
+    }
+    return response.json();
+  }
+  termRegistry = await fetchJson(termRegistryPath);
+  terms = await Promise.all(termRegistry.terms.map(async (term) => {
     const [calendar, termTimetable] = await Promise.all([
-      fetch(`${dir}/bus_calendar.json`).then((response) => response.json()),
-      fetch(`${dir}/bus_timetable.json`).then((response) => response.json()),
+      fetchJson(`./${term.directory}/bus_calendar.json`),
+      fetchJson(`./${term.directory}/bus_timetable.json`),
     ]);
-    return { calendar, timetable: termTimetable };
+    return { ...term, calendar, timetable: termTimetable };
   }));
-  timetable = terms[terms.length - 1].timetable;
+  timetable = (terms.find((term) => term.id === termRegistry.currentTerm) || terms[terms.length - 1]).timetable;
 
   populateStops();
   syncRouteInfo();
@@ -467,7 +552,7 @@ async function init() {
   const now = formatTokyoNow();
   elements.date.value = now.date;
   elements.time.value = now.time;
-  elements.stop.value = 'hino';
+  elements.stop.value = initialStop(window.location.search);
   liveMode = true;
 
   const initial = buildResult(elements.date.value, elements.time.value, elements.stop.value);
