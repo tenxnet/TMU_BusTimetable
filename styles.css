@@ -289,21 +289,6 @@ noscript a {
   background: var(--accent);
 }
 
-.direction-nav.compact-nav {
-  gap: 2px 16px;
-  margin: 8px 0 4px;
-}
-
-.direction-nav.compact-nav a {
-  min-height: 24px;
-  padding: 2px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  font-size: 12px;
-  line-height: 1.7;
-}
-
 a:focus-visible,
 button:focus-visible,
 summary:focus-visible {
