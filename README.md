@@ -33,3 +33,9 @@ https://www.tmu.ac.jp/campuslife_career/facility/minamiosawa_hino.html
 - `minamiosawa_west`: 南大沢キャンパス西
 - `hino`: 日野キャンパス
 
+## 検索エンジン向けの情報
+
+- ページ名、説明文、正規URL、見出し、使い方と公式情報へのリンクは `index.html` に記載しています。
+- `sitemap.xml` には正規URLを1件だけ記載しています。本文や時刻表データに実質的な更新があったときに `lastmod` を更新します。ビルドだけで日付を更新する必要はありません。
+- 公開先は `https://tenxnet.github.io/TMU_BusTimetable/` です。リポジトリ内の `robots.txt` はこのサブディレクトリに配信されるため、ドメイン全体のクロール制御には使われません。クロール制御を行う場合は `https://tenxnet.github.io/robots.txt` で設定する必要があります。
+- 公開後はSearch Consoleの公開URLテストで取得結果を確認します。サイトマップの送信受付と、サイトマップレポートの読み取り成功は別々に確認します。
